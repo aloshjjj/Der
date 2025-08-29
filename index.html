@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>مشغل IPTV عبر سكربت محلي</title>
+  <style>
+    body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+    select, video { margin-top: 20px; width: 90%; max-width: 800px; }
+    video { border: 2px solid #00ccff; border-radius: 10px; box-shadow: 0 0 20px #00ccff88; }
+    select { padding: 10px; font-size: 16px; background: #222; color: #fff; border: none; }
+  </style>
+</head>
+<body>
+
+  <h2>📺 مشغل قنوات M3U عبر سكربت محلي</h2>
+  <select id="channelSelect"></select>
+  <video id="video" controls autoplay></video>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const select = document.getElementById('channelSelect');
+    const video = document.getElementById('video');
+    let hls;
+
+    async function loadChannels() {
+      try {
+        const res = await fetch("http://localhost:3000/channels");
+        const channels = await res.json();
+
+        channels.forEach(ch => {
+          const option = document.createElement('option');
+          option.value = ch.url;
+          option.textContent = ch.name;
+          select.appendChild(option);
+        });
+
+        if (channels.length > 0) {
+          select.value = channels[0].url;
+          playChannel(channels[0].url);
+        }
+      } catch (err) {
+        alert("فشل تحميل القنوات");
+      }
+    }
+
+    function playChannel(url) {
+      if (hls) hls.destroy();
+      if (Hls.isSupported()) {
+        hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        video.addEventListener('loadedmetadata', () => video.play());
+      }
+    }
+
+    select.addEventListener('change', e => playChannel(e.target.value));
+    loadChannels();
+  </script>
+
+</body>
+</html>
